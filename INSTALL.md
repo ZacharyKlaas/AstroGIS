@@ -1,0 +1,5 @@
+Installation
+
+The Simple implementation of AstroGIS requires that any main application file (that is, a file that is neither a "Task" file supporting the application or a file containing raw data used by the application) have a path location with an associated "lib" subfolder.  It is that subfolder that properly contains any associated "Task" or raw data files required for the application's functioning.  Application files are compiled using the Simple compiler, which is freely available at http://www.simplecodeworks.com/website.html for downloading.
+
+The Python implementation of AstroGIS can be run directly from the .py files provided, so long as the data files required are located in the same path location.  Because trigonometric functions are used by AstroGIS, however, it is first necessary to add the SciPy and NumPy packages to the version of Python you are using.  These packages are available at http://sourceforge.net/projects/scipy/ and http://sourceforge.net/projects/numpy/ for downloading.  Python itself is available at http://www.python.org/getit/ for downloading.
