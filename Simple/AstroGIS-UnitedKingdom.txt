@@ -25,7 +25,7 @@ Common Float2 lowz
 Common Float2 highz
 Common Float2 avgx
 Common Float2 avgy
-Common Float2 avgz
+Common Float2 avgz 
 
 //declarations of double-precision floating variables used
 //THESE ARE THE VARIABLES USED TO PASS INFORMATION ABOUT THE
