@@ -1,0 +1,3 @@
+Int myquit()
+//put any additional ending code here
+goodbye
