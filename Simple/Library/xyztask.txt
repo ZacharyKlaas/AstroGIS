@@ -1,0 +1,115 @@
+//declaration of XYZ translation task to be called
+//THIS FUNCTION TAKES THE VALUE OF LATITUDE, LONGITUDE AND ALTITUDE,
+//AND ROTATION ANGLES FOR "ROLLING" (ROTATING THE IMAGE AROUND THE X-
+//AXIS), "PITCHING" (ROTATING THE IMAGE AROUND THE Y-AXIS) AND "YAWING"
+//(ROTATING THE IMAGE AROUND THE Z-AXIS), AND THEN PROPERLY
+//CALCULATES EARTH-CENTRED EARTH-FIXED COORDINATES, IN ORDER TO
+//ROTATE GEOGRAPHIC LOCATIONS IN THREE DIMENSIONS.
+Task xyztask(Float2 latitude, Float2 longitude, Float2 altitude, Float2 roll, Float2 pitch, Float2 yaw)
+
+//declarations of double-precision floating variables used
+//THIS IS THE LIST OF THE VARIABLES USED BY THIS MODULE.
+Common Float2 latitude
+Common Float2 longitude
+Common Float2 altitude
+Common Float2 roll
+Common Float2 pitch
+Common Float2 yaw
+Float2 semimajor
+Float2 flattening
+Float2 semiminor
+Float2 eccentricitysquared
+Float2 pi
+Float2 degreestoradians
+Float2 normalvalue
+Common Float2 xval
+Common Float2 yval
+Common Float2 zval
+Float2 phi
+Float2 theta
+Float2 psi
+Float2 x1
+Float2 x2
+Float2 x3
+Float2 y1
+Float2 y2
+Float2 y3
+Float2 z1
+Float2 z2
+Float2 z3
+Common Float2 rotatedx
+Common Float2 rotatedy
+Common Float2 rotatedz
+
+//THE FOLLOWING ARE GEOGRAPHIC AND MATHEMATICAL CONSTANTS
+//USED BY THE MODULE TO CALCULATE XYZ VALUES.
+
+//the semimajor axis
+Set semimajor = 6378.137
+
+//the flattening
+Set flattening = 1 / 298.257223563
+
+//the calculation of the semiminor axis
+Set semiminor = semimajor * (1 - flattening)
+
+//the calculation of the eccentricity squared
+Set eccentricitysquared = 1 - ((semiminor / semimajor) ^ 2)
+
+//the value of pi
+Set pi = 3.141592653589793
+
+//the multiplier to change degrees to radians
+Set degreestoradians = pi / 180
+
+//the normal value to distribute in the xyz calculations
+Set normalvalue = semimajor / Sqrt(1 - eccentricitysquared * (Sin(degreestoradians * latitude)) ^ 2)
+
+//convert roll, pitch and yaw to radian measures phi, theta, psi
+Set phi = degreestoradians * roll
+Set theta = degreestoradians * pitch
+Set psi = degreestoradians * yaw
+
+//THESE ARE TRANSFORMATION VALUES USED REPEATEDLY IN THE MODULE'S
+//CALCULATIONS.
+
+//x value transformation
+Set xval = (normalvalue + altitude) * Cos(degreestoradians * latitude) * Cos(degreestoradians * longitude)
+
+//y value transformation
+Set yval = (normalvalue + altitude) * Cos(degreestoradians * latitude) * Sin(degreestoradians * longitude)
+
+//z value transformation
+Set zval = (((1 - eccentricitysquared) * normalvalue) + altitude) * Sin(degreestoradians * latitude)
+
+//THIS IS THE PROCESS OF COMPLETING THE ROTATION, USING THE 
+//TRANSFORMATION VALUES PREVIOUSLY CALCULATED.
+
+//rotation of x value
+//explanation
+Set x1 = xval * (Cos(theta) * Cos(psi))
+Set x2 = yval * ((Cos(phi) * Sin(psi)) + (Sin(phi) * Sin(theta) * Cos(psi)))
+Set x3 = zval * ((Sin(phi) * Sin(psi)) - (Cos(phi) * Sin(theta) * Cos(psi)))
+Set rotatedx = x1 + x2 + x3
+
+//rotation of y value
+//explanation
+Set y1 = xval * (-Cos(theta) * Sin(psi))
+Set y2 = yval * ((Cos(phi) * Cos(psi)) - (Sin(phi) * Sin(theta) * Sin(psi)))
+Set y3 = zval * ((Sin(phi) * Cos(psi)) + (Cos(phi) * Sin(theta) * Sin(psi)))
+Set rotatedy = y1 + y2 + y3
+
+//rotation of z value
+//explanation
+Set z1 = xval * (Sin(theta))
+Set z2 = yval * (-Sin(phi) * Cos(theta))
+Set z3 = zval * (Cos(phi) * Cos(theta))
+Set rotatedz = z1 + z2 + z3
+
+//information is now calculated, we can return to the calling program
+//THIS IS A FUNCTION WHICH RETURNS VALUES THROUGH THE "COMMON"
+//VARIABLES IN THE VARIABLES LIST SHOWN NEAR THE BEGINNING OF THE
+//CODE.  THESE VARIABLES PROVIDE THE MAIN PROGRAM AND OTHER MODULES
+//WITH THE INFORMATION NECESSARY TO ROTATE COORDINATES IN THREE
+//DIMENSIONS.
+Return
