@@ -11,4 +11,4 @@ The initial concept of this project was:
 
 Towards the first end, this is a project which has been coded in the C++-based "Simple" language, which is written for young programmers (middle school/junior high school or high school age), in order to encourage those less-inclined to use more complex languages to contribute to GIS design.
 
-Towards the second end, the project has also been coded in Python, a more standard language for GIS applications at the current time.  Porting of code to other languages is encouraged as well, particularly those used to create web-based or platform-independent applications, such as Java or Javascript, or those used more extensively in the statistics and GIS community, such as R.
+Towards the second end, the project has also been coded in Python, a more standard language for GIS applications at the current time.  Porting of code to other languages is encouraged as well, particularly those used to create web-based or platform-independent applications, such as Java or Javascript, or those used more extensively in the statistics community, such as R.
