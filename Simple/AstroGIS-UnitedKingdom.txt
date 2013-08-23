@@ -1,0 +1,414 @@
+Win-Simple [AstroGIS: United Kingdom] 1000x700 *
+//THIS IS A SIMPLE PROGRAM FOR WINDOWS, WITH THE WINDOWS TITLE
+//BAR LABEL SET TO "ASTROGIS: UNITED KINGDOM", AT A RESOLUTION
+//FOR THE WINDOW OF 1000 PIXELS LEFT/RIGHT AND 700 PIXELS UP/DOWN.
+//THE * OPERATOR INDICATES THE WINDOW WILL HAVE MINIMIZE AND
+//CLOSE BUTTONS ON THE RIGHT-HAND SIDE.
+
+//initialising the point array information variables
+//THESE ARE THE VARIABLES USED BY ALL THE MODULES OF THIS PROJECT.
+//THEY EXCHANGE INFORMATION ABOUT THE ARRAY OF POINTS THAT CREATE
+//THE POLYGONS.
+Common Float2 origin[2]
+Common Float2 scale[2]
+Common Float2 flip[2]
+Common Int polyarray[1000]
+Common Int coords
+Common Float2 x[10000]
+Common Float2 y[10000]
+Common Float2 z[10000]
+Common Float2 lowx
+Common Float2 highx
+Common Float2 lowy
+Common Float2 highy
+Common Float2 lowz
+Common Float2 highz
+Common Float2 avgx
+Common Float2 avgy
+Common Float2 avgz
+
+//declarations of double-precision floating variables used
+//THESE ARE THE VARIABLES USED TO PASS INFORMATION ABOUT THE
+//GEOGRAPHIC TRANSFORMATION BEING PASSED INTO THE ARRAY OF POINTS
+//FOR THE POLYGONS.
+Common Float2 latitude
+Common Float2 longitude
+Common Float2 altitude
+Common Float2 roll
+Common Float2 pitch
+Common Float2 yaw
+Common Float2 xval
+Common Float2 yval
+Common Float2 zval
+Common Float2 rotatedx
+Common Float2 rotatedy
+Common Float2 rotatedz
+
+//initialising the point array used to draw the polygons
+//THESE ARE THE VARIABLES USED BY THIS MODULE FOR DRAWING THE
+//POLYGONS.  THEY ARE USED TO BRING IN ANY INFORMATION FROM A
+//PARTICULAR POLYGON POINT ARRAY FILE.  (WE WILL LATER CALL
+//THESE THE "ZOOM/PAN COORDINATES" VARIABLES.)
+Float2 xy[10000][2]
+Float2 avgxy[2]
+
+//initialising calculation variables
+//THESE ARE THE VARIABLES USED BY THIS MODULE TO MAP AND REMAP THE 
+//POLYGON POINTS FROM THE ARRAY ON THE SCREEN.  THEY TRACK WHERE
+//THE CENTRE OF THE MAP EXTENT IS FOR THE POLYGON MAP (THE 
+//"EXTENTROID"), AND WHERE THE BEGINNING POINT FOR THE POLYGON ARRAY IS 
+//LOCATED RELATIVE TO IT.
+Text startflag
+Common Float2 first[2]
+Common Float2 begin[2]
+Common Float2 cent[2]
+Common Float2 oldcent[2]
+Common Float2 diff[2]
+Common Float2 low[2]
+Common Float2 high[2]
+
+//default zoom and pan variables
+//THESE VARIABLES SET THE DEFAULTS FOR ZOOM AND PAN CHANGES.  IN THIS
+//CASE, EACH PRESSING OF THE ZOOM BUTTON WILL INCREASE OR DECREASE THE 
+//SIZE OF THE POLYGON OBJECT BY A MAGNITUDE OF 1.25 OVER THE LAST VALUE 
+//FOR THE SIZE, WHILE EACH PRESSING OF THE PAN BUTTON WILL MOVE THE 
+//OBJECT 50 PIXELS IN THE DIRECTION CHOSEN FOR THE PAN.
+Float zoom[2]
+Set zoom[0] = 1.25
+Set zoom[1] = 1.25
+Float pan[2]
+Set pan[0] = 50
+Set pan[1] = 50
+Float twist[3]
+Set twist[0] = 5
+Set twist[1] = 5
+Set twist[2] = 5
+
+//bringing in the point array information for the polygon
+//THIS IS A SUBROUTINE CALL TO A MODULE CONTAINING POINT ARRAY 
+//INFORMATION FOR THE UK POLYGONS.  IF ONE WANTED TO BRING IN ANOTHER 
+//POINT ARRAY INSTEAD, ONE WOULD CALL A MODULE WITH A DIFFERENT NAME
+//CONTAINING DIFFERENT INFORMATION.  THE @ OPERATOR INDICATES
+//THAT AN OUTSIDE FILE IS BEING REFERENCED FOR THIS SUBROUTINE.
+Call theunitedkingdom @
+
+//calculation of the "extentroid" for the polygon
+//THIS IS A SUBROUTINE CALL TO A MODULE CALCULATING WHAT THE LOCATION 
+//OF THE "EXTENTROID" IS FOR THE MAPPED OBJECT (IN THIS CASE, THE UK
+//COVERAGE, SINCE THAT IS THE ARRAY ON WHICH IT IS OPERATING HERE.)
+Call extentroid @
+
+//bring the x and y values in as the "axis variables" for 2D space
+//THIS LOOP SETS THE MODULES VARIABLES TO WHATEVER VALUES WERE
+//CONTAINED IN THE POINT ARRAY COVERAGE FILE, IN THIS CASE, THE
+//"THEUNITEDKINGDOM" COVERAGE FILE.
+Do k = 0, (coords-1)
+		Set longitude = x[k]
+		Set latitude = y[k]
+		Set altitude = z[k]
+		Call xyztask(latitude,longitude,altitude,roll,pitch,yaw) @
+		Set xy[k][0] = rotatedx
+		Set xy[k][1] = rotatedy
+Loop
+
+//Setting a temporary "centre" variable to the coordinates for 
+//the "extentroids"
+//THIS "CENTRE" VARIABLE WILL CHANGE THROUGH EACH SUCCESSIVE MOVING OF 
+//THE POLYGONS ON SCREEN.
+Set cent[0] = avgxy[0]
+Set cent[1] = avgxy[1]
+
+//Setting the beginning point
+//THIS IS THE "PEN DOWN" POSITION FROM WHICH EACH OF THE INDIVIDUAL
+//POLYGONS BEGIN DRAWING.
+Set begin[0] = xy[0][0]
+Set begin[1] = xy[0][1]
+
+//the translation process for the polygon in 2D space
+//THESE LOOPS TRANSLATE THE COORDINATES GIVEN IN THE COVERAGE FILE,
+//IN THIS CASE THE "THEUNITEDKINGDOM" FILE, ACCORDING TO THE FACTORS 
+//GIVEN BY THE DEFAULT TRANSLATION VARIABLES.  ONCE THIS IS COMPLETED, 
+//THE ORIGINAL COORDINATES ARE TRANSLATED TO WHAT WE WILL CALL THE
+//ZOOM/PAN COORDINATES.  THESE MAKE IT POSSIBLE TO ALWAYS LOCATE THE 
+//OBJECT ON THE SCREEN.
+Do k = 0, (coords-1)
+	Do h = 0, 1
+		If (scale[h] = 0) Continue
+		Set temp = xy[k][h]
+		Set xy[k][h] = temp * scale[h]
+	Loop
+	Do i = 0, 1
+		Set temp = xy[k][i]
+		Set xy[k][i] = temp + origin[i]
+	Loop
+	Do j = 0, 1
+		If (flip[j] <= 0) Continue
+		Set temp = xy[k][j]
+		Set xy[k][j] = flip[j] - temp
+	Loop
+	Do p = 0, 1
+		If (k = 0) Set low[p] = xy[k][p]
+		If (k = 0) Set high[p] = xy[k][p]
+		If (k = 0) Continue
+		Set temp = xy[k][p]
+		If low[p] > xy[k][p] Set low[p] = xy[k][p]
+		If high[p] < xy[k][p] Set high[p] = xy[k][p]
+	Loop
+Loop
+
+//clearing the screen to draw the polygon
+//THE "POLYDRAW" REFERENCE IS A "GOTO" MARKER INDICATING THAT THIS IS
+//THE BEGINNING OF THE PROCEDURE TO DRAW EACH POLYGON.  THE FIRST
+//INSTRUCION IS TO CLEAR THE SCREEN IN THE APPLICATION WINDOW.
+polydraw: cls
+
+//keeping a record of the current centre position for later use
+//EVERYTIME A POLYGON DRAWS OR REDRAWS, A RECORD OF THE PAST
+//LOCATION OF THE CENTRE OF THE POLYGON IS KEPT.
+Set oldcent[0] = cent[0] ; Set oldcent[1] = cent[1]
+
+//if this is the first time drawing the polygon, go to a specific
+//procedure in the code to draw the polygon using the initial values
+//THERE IS A PROCEDURE MARKED "STARTUP" AT THE END OF THIS CODE
+//LISTING SHOWING HOW THE OBJECT IS TO BE DRAWN INITIALLY.  THIS
+//CODE WILL ONLY RUN THE VERY FIRST TIME THE OBJECT IS DRAWN ON
+//SCREEN.  AFTER THAT, THE "STARTFLAG" WILL BE TURNED OFF AND THE
+//CODE EXECUTION WILL CONTINUE ON NORMALLY.
+If (startflag != "yes") Goto startup
+
+//scaling, originating and drawing the polygon
+//THIS LOOP DRAWS THE POLYGON, USING A RED LINE FOR THE POLYGON BORDER,
+//AND ACCORDING TO THE TRANSLATION VARIABLES "ORIGIN" AND "SCALE".  IT
+//ALSO ADJUSTS FOR THE DIFFERENCE CALCULATED BETWEEN ANY NEW "CENT"
+//LOCATION AND ANY IMMEDIATELY PRECEDING "OLDCENT" LOCATION.  THIS IS
+//REPRESENTED BY THE "DIFF" VARIABLE.
+Set objects = 0
+Do m = 1, coords-1
+      If (m = 1) Call filled square ((avgxy[0]*scale[0])+(origin[0]-diff[0]),(avgxy[1]*scale[1])+(origin[1]-diff[1]),2)
+      If (m = 1) Call filled square ((xy[m-1][0]*scale[0])+(origin[0]-diff[0]),(xy[m-1][1]*scale[1])+(origin[1]-diff[1]),2)
+      If (m = polyarray[objects]+1) Call filled square ((xy[m-1][0]*scale[0])+(origin[0]-diff[0]),(xy[m-1][1]*scale[1])+(origin[1]-diff[1]),2)
+      If (m = polyarray[objects]+1) Set temp = objects
+	If (m = polyarray[objects]+1) Set objects = temp + 1 
+      If (m = polyarray[objects]) Continue
+	Call line color (RED)
+	Call line ((xy[m-1][0]*scale[0])+(origin[0]-diff[0]),(xy[m-1][1]*scale[1])+(origin[1]-diff[1]),(xy[m][0]*scale[0])+(origin[0]-diff[0]),(xy[m][1]*scale[1])+(origin[1]-diff[1]))
+      If (polyarray[objects] = 0) Break
+Loop
+
+//drawing the buttons to zoom, pan or turn
+//THIS DRAWS SIX BUTTONS ON THE SCREEN WHICH ARE USED TO NAVIGATE ON
+//THE SCREEN - TWO ZOOM BUTTONS (IN, OUT) AND FOUR PAN BUTTONS (LEFT,
+//RIGHT, UP, DOWN).  THE FIRST NUMBERS AMONGST THE PARAMETERS FOR THIS
+//SUBROUTINE FUNCTION ARE THE ID NUMBERS FOR EACH BUTTON, WHICH ARE
+//USED BY THE BUTTON HANDLERS TO RESPOND TO THE BUTTONS.  THE NEXT
+//ELEMENT IN THE PARAMETERS ARE THE LABELS FOR THE BUTTONS, AND THE
+//NEXT PARAMETERS SPECIFY THE COLOUR OF THE BUTTON AND THAT THE BUTTON
+//RETURNS A VALUE WHENEVER A CLICK IS RELEASED.
+Tabxy(0,0); Call draw button (1, "Zoom In", 11, 1)
+Tabxy(10,0); Call draw button (2, "Zoom Out", 11, 1)
+Tabxy(20,0); Call draw button (3, "Pan Left", 11, 1)
+Tabxy(30,0); Call draw button (4, "Pan Right", 11, 1)
+Tabxy(41,0); Call draw button (5, "Pan Up", 11, 1)
+Tabxy(49,0); Call draw button (6, "Pan Down", 11, 1)
+Tabxy(0,3); Call draw button (7, "Roll Forward", 11, 1)
+Tabxy(15,3); Call draw button (8, "Roll Back", 11, 1)
+Tabxy(26,3); Call draw button (9, "Pitch Forward", 11, 1)
+Tabxy(41,3); Call draw button (10, "Pitch Back", 11, 1)
+Tabxy(53,3); Call draw button (11, "Yaw Forward", 11, 1)
+Tabxy(66,3); Call draw button (12, "Yaw Back", 11, 1)
+
+//reading the buttons
+//THIS LOOP CONTINUALLY TRIES TO READ THE BUTTONS, UNLESS EITHER THE
+//ESCAPE KEY IS PRESSED, OR A BUTTON ON THE SCREEN HAS BEEN CLICKED.
+//IF ESCAPE IS PRESSED, THE PROGRAM TERMINATES.  IF A BUTTON ON THE
+//SCREEN HAS BEEN CLICKED, THE LOOP BREAKS AND THE CODE PROCEEDS.
+Do
+	wait (0)
+	read quitkey (Esc)
+	id = read buttons ()
+	If id Break
+Loop
+
+//zoom button handler
+//IF THE ID IS 1, WE ARE ZOOMING IN, AND THE OBJECT IS, TO OUR 
+//APPEARANCES, GETTING BIGGER BY THE MAGNITUDE OF THE ZOOM FACTOR (IN 
+//THIS CASE 1.25).  IF THE ID IS 2, WE ARE ZOOMING OUT, AND THE
+//OBJECT IS, TO OUR APPEARANCES, GETTING SMALLER BY THE MAGNITUDE OF
+//THE ZOOM FACTOR. IN THE CASE OF ZOOMS, THE CENTRE LOCATION ON THE
+//SCREEN DOES NOT APPEAR TO CHANGE, SO THE VALUE OF "CENT" IS ONLY
+//CHANGED MOMENTARILY, THEN RESET BACK TO ITS OLD VALUE.  (THIS IS
+//NOT THE CASE FOR PANS, HOWEVER.)
+If (id = 1) Set temp = scale[0]
+If (id = 1) Set scale[0] = temp * zoom[0]
+If (id = 1) Set cent[0] = avgxy[0] * scale[0] + origin[0] - first[0]
+If (id = 1) Set diff[0] = cent[0] - oldcent[0]
+If (id = 1) Set cent[0] = oldcent[0]
+If (id = 1) Set begin[0] = xy[0][0] * scale[0] + origin[0] - first[0] - diff[0]
+If (id = 1) Set temp = scale[1]
+If (id = 1) Set scale[1] = temp * zoom[1]
+If (id = 1) Set cent[1] = avgxy[1] * scale[1] + origin[1] - first[1]
+If (id = 1) Set diff[1] = cent[1] - oldcent[1]
+If (id = 1) Set cent[1] = oldcent[1]
+If (id = 1) Set begin[1] = xy[0][1] * scale[1] + origin[1] - first[1] - diff[1]
+If (id = 1) Goto polydraw
+
+If (id = 2) Set temp = scale[0]
+If (id = 2) Set scale[0] = temp * (1/zoom[0])
+If (id = 2) Set cent[0] = avgxy[0] * scale[0] + origin[0] - first[0]
+If (id = 2) Set diff[0] = cent[0] - oldcent[0]
+If (id = 2) Set cent[0] = oldcent[0]
+If (id = 2) Set begin[0] = xy[0][0] * scale[0] + origin[0] - first[0] - diff[0]
+If (id = 2) Set temp = scale[1]
+If (id = 2) Set scale[1] = temp * (1/zoom[1])
+If (id = 2) Set cent[1] = avgxy[1] * scale[1] + origin[1] - first[1]
+If (id = 2) Set diff[1] = cent[1] - oldcent[1]
+If (id = 2) Set cent[1] = oldcent[1]
+If (id = 2) Set begin[1] = xy[0][1] * scale[1] + origin[1] - first[1] - diff[1]
+If (id = 2) Goto polydraw
+
+//pan button handler
+//IF THE ID IS 3, WE ARE MOVING LEFT BY THE MAGNITUDE OF THE PAN 
+//FACTOR (IN THIS CASE 50 PIXELS LEFT).  IF THE ID IS 4, WE ARE PANNING 
+//RIGHT BY THE DISTANCE OF THE PAN FACTOR.  IF THE ID IS 5, WE ARE 
+//PANNING UP BY THAT DISTANCE.  IF THE ID IS 6, WE ARE PANNING DOWN
+//BY THAT DISTANCE.  IN THE CASE OF PANS, THE LOCATION OF THE CENTRE
+//ON THE SCREEN DOES APPEAR TO CHANGE, SO THE VALUE OF "CENT" IS, IN
+//THIS CASE, CHANGED WITHOUT BEING RESET TO ITS PREVIOUS VALUE.
+
+If (id = 3) Set temp = origin[0]
+If (id = 3) Set origin[0] = temp + pan[0]
+If (id = 3) Set temp = cent[0]
+If (id = 3) Set cent[0] = temp + pan[0]
+If (id = 3) Set temp = begin[0]
+If (id = 3) Set begin[0] = temp + pan[0]
+If (id = 3) Goto polydraw
+
+If (id = 4) Set temp = origin[0]
+If (id = 4) Set origin[0] = temp - pan[0]
+If (id = 4) Set temp = cent[0]
+If (id = 4) Set cent[0] = temp - pan[0]
+If (id = 4) Set temp = begin[0]
+If (id = 4) Set begin[0] = temp - pan[0]
+If (id = 4) Goto polydraw
+
+If (id = 5) Set temp = origin[1]
+If (id = 5) Set origin[1] = temp + pan[1]
+If (id = 5) Set temp = cent[1]
+If (id = 5) Set cent[1] = temp + pan[1]
+If (id = 5) Set temp = begin[1]
+If (id = 5) Set begin[1] = temp + pan[1]
+If (id = 5) Goto polydraw
+
+If (id = 6) Set temp = origin[1]
+If (id = 6) Set origin[1] = temp - pan[1]
+If (id = 6) Set temp = cent[1]
+If (id = 6) Set cent[1] = temp - pan[1]
+If (id = 6) Set temp = begin[1]
+If (id = 6) Set begin[1] = temp - pan[1]
+If (id = 6) Goto polydraw
+
+//roll, pitch and yaw button handlers
+//IF THE ID IS ANYTHING FROM 7 THROUGH 12, THIS MEANS
+//THAT ONE OF THE ROLL, PITCH OR YAW BUTTONS HAS BEEN PRESSED.
+//THESE BUTTONS USE THE SAME REDRAWING ROUTINE TO RECALCULATE
+//COORDINATES USING NEW ANGLES OF ROTATION.  BUTTON 7 "ROLLS
+//FORWARD" (ROTATES THE IMAGE IN ONE X DIRECTION), BUTTON 8
+//"ROLLS BACKWARD" (ROTATES THE IMAGE IN THE OPPOSITE X
+//DIRECTION), BUTTON 9 "PITCHES FORWARD" (ROTATES THE IMAGE
+//IN ONE Y DIRECTION), BUTTON 10 "PITCHES BACK" (ROTATES THE\
+//IMAGE IN THE OPPOSITE Y DIRECTION), BUTTON 11 "YAWS FORWARD"
+//(ROTATES THE IMAGE IN THE Z DIRECTION), AND BUTTON 12
+//"YAWS BACK" (ROTATES THE IMAGE IN THE OPPOSITE Z DIRECTION).
+If (id = 7) Set temp = roll
+If (id = 7) Set roll = temp + twist[0]
+
+If (id = 8) Set temp = roll
+If (id = 8) Set roll = temp - twist[0]
+
+If (id = 9) Set temp = pitch
+If (id = 9) Set pitch = temp + twist[1]
+
+If (id = 10) Set temp = pitch
+If (id = 10) Set pitch = temp - twist[1]
+
+If (id = 11) Set temp = yaw
+If (id = 11) Set yaw = temp + twist[2]
+
+If (id = 12) Set temp = yaw
+If (id = 12) Set yaw = temp - twist[2]
+
+If (id >= 7) Set cent[0] = avgxy[0] * scale[0] + origin[0]
+If (id >= 7) Set diff[0] = cent[0] - oldcent[0]
+If (id >= 7) Set cent[0] = oldcent[0]
+If (id >= 7) Set begin[0] = xy[0][0] * scale[0] + origin[0] - diff[0]
+If (id >= 7) Set cent[1] = avgxy[1] * scale[1] + origin[1]
+If (id >= 7) Set diff[1] = cent[1] - oldcent[1]
+If (id >= 7) Set cent[1] = oldcent[1]
+If (id >= 7) Set begin[1] = xy[0][1] * scale[1] + origin[1] - diff[1]
+If (id >= 7) Goto turn
+
+//initialising the image
+//THE DEFAULT VALUES OF "ORIGIN" AND "SCALE" NEED TO BE APPLIED
+//TO EACH POLYGON OBJECT BEFORE IT MAY BE DRAWN THE FIRST TIME.  THIS
+//IS WHY AN INITIALISATION PROCEDURE MUST BE RUN WHEN THE PROGRAM
+//FIRST ATTEMPTS TO DRAW ANYTHING, TO ENSURE THAT THE POLYGON
+//OBJECT IS IN THE PROPER ZOOM/PAN COORDINATES.
+startup:
+Set avgxy[0] = (low[0] + high[0]) / 2
+Set avgxy[1] = (low[1] + high[1]) / 2
+Set cent[0] = avgxy[0] * scale[0] + origin[0] - first[0]
+Set diff[0] = cent[0] - oldcent[0]
+Set cent[0] = oldcent[0]
+Set begin[0] = xy[0][0] * scale[0] + origin[0] - first[0] - diff[0]
+Set cent[1] = avgxy[1] * scale[1] + origin[1] - first[1]
+Set diff[1] = cent[1] - oldcent[1]
+Set cent[1] = oldcent[1]
+Set begin[1] = xy[0][1] * scale[1] + origin[1] - first[1] - diff[1]
+Set startflag = "yes"
+Goto polydraw
+
+//turning procedure
+//THIS ROUTINE TAKES ANY CALCULATED NEW COORDINATES AND TRANSLATES
+//THEM USING ANGLES OF ROTATION FOR ROLLING, PITCHING AND YAWING
+//(AS POSSIBLY CHANGED BY THE ROLL, PITCH AND YAW BUTTONS).
+turn:
+Do k = 0, (coords-1)
+		Set longitude = x[k]
+		Set latitude = y[k]
+		Set altitude = z[k]
+		Call xyztask(latitude,longitude,altitude,roll,pitch,yaw) @
+		Set xy[k][0] = rotatedx
+		Set xy[k][1] = rotatedy
+	Do j = 0, 1
+		If (flip[j] <= 0) Continue
+		Set temp = xy[k][j]
+		Set xy[k][j] = flip[j] - temp
+	Loop
+	Do p = 0, 1
+		If (k = 0) Set low[p] = xy[k][p]
+		If (k = 0) Set high[p] = xy[k][p]
+		If (k = 0) Continue
+		Set temp = xy[k][p]
+		If low[p] > xy[k][p] Set low[p] = xy[k][p]
+		If high[p] < xy[k][p] Set high[p] = xy[k][p]
+	Loop
+Loop
+Goto startup
+
+//appending the library task files necessary for this project
+//THIS PROGRAM CALLS THREE SUBROUTINES THAT ARE PROVIDED IN OTHER FILE
+//LISTINGS IN THE FILE "LIBRARY" (SYMBOLISED AS "L:" IN THE CODE) ALSO 
+//INCLUDED IN THE FOLDER FOR THE APPLICATION.  THE REASON FOR THIS IS 
+//THAT, IF A GIS WERE TO BE BUILT UPON THIS MODEL, ULTIMATELY WE WOULD 
+//WANT THE DATA FILE FOR EACH POLYGON COVERAGE TO BE A SEPARATE FILE, 
+//SO THAT THIS PROGRAM COULD DRAW ANY COVERAGE FROM THE SAME CODE.  SO 
+//THE DATA FILE ("THEUNITEDKINGDOM") IS PROVIDED AS A SEPARATE 
+//SUBROUTINE IN A SEPARATE FILE. LIKEWISE, SINCE THE "EXTENTROID" 
+//CALCULATION PROCEDURE COULD BE USED IN OTHER APPLICATIONS, IT IS 
+//PROVIDED AS A SEPARATE SUBROUTINE FILE AS WELL.  ALSO, CODE FOR
+//THE SUBROUTINE THAT CONVERTS LATITUDE, LONGITUDE AND ALTITUDE TO
+//EARTH CENTRED-EARTH FIXED COORDINATES IS PROVIDED IN A SEPARATE
+//MODULE CALLED "XYZTASK".
+Append L: theunitedkingdom
+Append L: extentroid
+Append L: xyztask
