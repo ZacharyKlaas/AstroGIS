@@ -1,0 +1,157 @@
+Win-SiMPLE [Polygon Coordinate Reader] *
+
+//THE FOLLOWING CODE PRODUCES A TEXT FILE ASTROGIS
+//CAN USE AS A COVERAGE FROM A COMMA-SEPARATED FILE WITH
+//GEOGRAPHIC COORDINATES REPRESENTING THE LONGITUDE,
+//LATITUDE AND ALTITUDE, GROUPED BY EACH POLYGON AND
+//PREFACED BY A NUMBER INDICATING HOW MANY POINTS ARE
+//IN EACH POLYGON OR GEOGRAPHIC OBJECT.
+
+//THE FORM THE FILE MUST BE IN IS AS FOLLOWS:
+//[number of geographic objects]<CR>
+//[number of points in first object]<CR>
+//[longitude in degrees],[latitude in degrees],[altitude in meters]<CR>
+//(do longitude, latitude and altitude for each point in first object)
+//[number of points in second object]<CR>
+//[longitude in degrees],[latitude in degrees],[altitude in meters]<CR>
+//(do longitude, latitude and altitude for each point in second object)
+//...
+//[number of points in last object]<CR>
+//[longitude in degrees],[latitude in degrees],[altitude in meters]<CR>
+//(do longitude, latitude and altitude for each point in last object)
+
+//initialising variables used in coordinate parsing
+Text data
+Text letter
+Text info
+Int feature
+Int coords
+Int polynum
+Int polyarray[100000]
+
+//initialising variable used in data reading and writing
+Int eof
+Int err
+Text refname
+Text newname
+Text refpath
+Text newpath
+Int cumulative
+
+//initialise arrays for coordinates and tokens
+Float xarray[100000]
+Float yarray[100000]
+Float zarray[100000]
+Text tokens[3]
+Int number
+
+//THIS PART OF THE CODE OPENS THE EXISTING COMMA-SEPARATED TEXT
+//FILE CONSTRUCTED AS PREVIOUSLY DESCRIBED.  THE USER IS
+//PROMPTED FOR THE NAME OF THE FILE FROM WHICH DATA IS TO BE
+//READ.
+
+refname = keyintext ("What file contains your data? ")
+
+//open the polygon coordinate file and read its contents
+refpath = "read " + refname +".txt"
+handle = open file (refpath)
+
+read file line (handle, data, eof)
+Set polynum = Ttoi(data)
+Display "There are ",polynum," geographic features."
+
+newfeature:
+read file line (handle, data, eof)
+If (eof) Goto nomore
+Set polyarray[feature] = Ttoi(data)
+Display "Cumulative points are currently ",cumulative,"."
+
+//go through the coordinate list, change all commas to spaces
+//(because the parser command will tokenise by spaces, not commas)
+Do k = cumulative+1, cumulative+polyarray[feature]
+	read file line (handle, data, eof)
+	If (eof) Break
+	Do i = 1, length(data)
+		Set letter = extract(data,i-1,i-1)
+		If (letter = ",") Set letter = " "
+		Set temp = info
+		Set info = temp + letter
+	Loop
+	Set data = info
+	Set info = ""
+
+//parse, display in the reader by coordinate type (x, y or z)
+//and store in the arrays.
+	Set number = 3
+	Call parse (data, tokens, number)
+	Do p = 1, number
+		If (p = 1) Set xarray[k-1] = Ttof(tokens[0])
+		If (p = 2) Set yarray[k-1] = Ttof(tokens[1])
+		If (p = 3) Set zarray[k-1] = Ttof(tokens[2])
+	Loop
+Loop
+
+Set add = cumulative
+Set cumulative = add + polyarray[feature]
+If (feature != 0) Set polyarray[feature] = cumulative
+Display "Feature ",feature+1," makes ",polyarray[feature]," vertices."
+Set add = feature
+Set feature = add + 1
+Display "Adding feature ",feature,"."
+If (feature = polynum) Goto nomore
+Goto newfeature
+
+//close the polygon coordinates file being read
+nomore:
+close file (handle)
+Set coords = polyarray[feature-1]
+Display "Finished with feature ",polyarray[feature-1],"."
+Display coords," number of coordinates."
+
+//THIS PART OF THE CODE SAVES THE GEOGRAPHIC INFORMATION
+//READ FROM THE COMMA-SEPARATED TEXT FILE AS A NEW TEXT
+//FILE WHICH CAN BE READ AS AN ASTROGIS COVERAGE MODULE (AS
+//"THEUNITEDKINGDOM" IS FOR THE EXAMPLE PROJECT PROVIDED).
+
+//now that we're done, we need a new file name for the data
+Display "\nInformation gathered."
+newname = keyintext ("What would you like to call this file? ")
+
+//open the feature polygon file called by this new name and write out 
+//the commands that will be used by the GIS to create the polygon
+//feature
+newpath = "write " + newname +".txt"
+handle = open file (newpath)
+data = "Task " + newname + "\n"
+write file line (handle, data, err)
+data = "Call mapcanvas @\n"
+write file line (handle, data, err)
+data = "Common Int polyarray[1000]"
+write file line (handle, data, err)
+data = "Common Int coords"
+write file line (handle, data, err)
+data = "Common Float2 x[10000]"
+write file line (handle, data, err)
+data = "Common Float2 y[10000]"
+write file line (handle, data, err)
+data = "Common Float2 z[10000]\n"
+write file line (handle, data, err)
+data = "Set polyarray[" + Itot(0) + "] = " + Itot(polyarray[0])
+write file line (handle, data, err)
+Set feature = 1
+Do k = 1, coords
+      If (k+1 = polyarray[feature]) Set data = "Set polyarray[" + Itot(feature) + "] = " + Itot(polyarray[feature])
+	If (k+1 = polyarray[feature]) write file line (handle, data, err)
+	If (k+1 = polyarray[feature]) Set add = feature
+	If (k+1 = polyarray[feature]) Set feature = add + 1
+	data = "Set x[" + Itot(k-1) + "] = " + Ftot(xarray[k-1]) + " ; Set y[" + Itot(k-1) + "] = " + Ftot(yarray[k-1]) + " ; Set z[" + Itot(k-1) + "] = " + Ftot(zarray[k-1])
+	write file line (handle, data, err)
+	If (err) Break
+Loop
+data = "\nSet coords = " + Itot(coords) + "\n"
+write file line (handle, data, err)
+data = "Append L: mapcanvas.txt"
+write file line (handle, data, err)
+
+//close the feature polygon file being written
+close file (handle)
