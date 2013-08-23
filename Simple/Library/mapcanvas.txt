@@ -1,0 +1,48 @@
+Task mapcanvas
+
+//these are the variables coordinated by this task
+//THESE ARE THE VARIABLES COORDINATED BY THIS TASK AND OTHER MODULES OF 
+//THIS PROJECT. THEY EXCHANGE INFORMATION ABOUT THE ARRAY OF POINTS 
+//THAT CREATE THE POLYGON.
+Common Float2 origin[2]
+Common Int polyarray[1000]
+Common Int coords
+Common Float2 x[10000]
+Common Float2 y[10000]
+Common Float2 z[10000]
+Common Float2 lowx
+Common Float2 highx
+Common Float2 lowy
+Common Float2 highy
+Common Float2 lowz
+Common Float2 highz
+Common Float2 avgx
+Common Float2 avgy
+Common Float2 avgz
+
+//initialising calculation variables
+//THESE ARE THE VARIABLES COORDINATED BY THIS MODULE TO MAP AND REMAP 
+//THE POLYGON POINTS FROM THE ARRAY ON THE SCREEN.  THEY TRACK WHERE
+//THE CENTRE OF THE MAP EXTENT IS FOR THE POLYGON MAP (THE 
+//"EXTENTROID"), AND WHERE THE BEGINNING POINT FOR THE POLYGON ARRAY IS 
+//LOCATED RELATIVE TO IT.
+Common Float2 first[2]
+Common Float2 begin[2]
+Common Float2 cent[2]
+Common Float2 oldcent[2]
+Common Float2 diff[2]
+Common Float2 low[2]
+Common Float2 high[2]
+
+//this sets the "extentroid" for the polygon in the zoom/pan 
+//coordinates
+//THE CENTRE OF THE COVERAGE EXTENT IS ONE CONSTANT VALUE IN THE
+//ORIGINAL DATA, BUT CHANGES EVERY TIME ONE ZOOMS OR PANS IN THE
+//ZOOM/PAN COORDINATES.  HERE WE SET THE INITIAL VALUES FOR THE
+//"EXTENTROID" LOCATION IN ZOOM/PAN COORDINATES.
+Set avgxy[0] = (low[0] + high[0]) / 2
+Set avgxy[1] = (low[1] + high[1]) / 2 
+Set first[0] = 0 - avgxy[0] + 500
+Set first[1] = 0 - avgxy[1] + 350
+Set origin[0] = first[0]
+Set origin[1] = first[1]
