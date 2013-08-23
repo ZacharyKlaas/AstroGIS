@@ -1,0 +1,51 @@
+Task extentroid
+
+//these are the variables used by this task
+//THESE ARE THE VARIABLES USED BY THIS TASK AND OTHER MODULES OF THIS 
+//PROJECT. THEY EXCHANGE INFORMATION ABOUT THE MAP EXTENT FOR THE ARRAY 
+//OF POINTS THAT CREATE THE POLYGONS.
+Common Int coords
+Common Float2 x[10000]
+Common Float2 y[10000]
+Common Float2 z[10000]
+Common Float2 lowx
+Common Float2 highx
+Common Float2 lowy
+Common Float2 highy
+Common Float2 lowz
+Common Float2 highz
+Common Float2 avgx
+Common Float2 avgy
+Common Float2 avgz
+
+//this finds the extent boundaries for the coverage
+//BY TRACKING WHAT THE LOWEST AND HIGHEST VALUES OF FOR THE X AND Y
+//COORDINATES OF THE POLYGON ARE, WE CAN "DRAW A VIRTUAL BOX" AROUND
+//THE POLYGON.  THE CENTRE INSIDE THAT BOX IS THE POINT AROUND WHICH
+//WE MUST DRAW THE POLYGONS.  (DRAWING THE REAL CENTROID FOR THE
+//POLYGON MIGHT NOT ACCOMPLISH MUCH FOR US, AS A REAL CENTROID CAN 
+//OFTEN FALL OUTSIDE OF A POLYGON, AND WE ARE ONLY CONCERNED HERE WITH 
+//HAVING A POINT TO LOCATE THE CENTRE OF THE DISPLAY AREA.)
+Do p = 0,(coords-1)
+      If (p = 0) Set lowx = x[p]
+	If (p = 0) Set highx = x[p]
+      If (p = 0) Set lowy = y[p]
+	If (p = 0) Set highy = y[p]
+      If (p = 0) Set lowz = z[p]
+	If (p = 0) Set highz = z[p]
+	If (lowx > x[p]) Set lowx = x[p]
+	If (highx < x[p]) Set highx = x[p]
+	If (lowy > y[p]) Set lowy = y[p]
+	If (highx < x[p]) Set highy = y[p]
+	If (lowz > z[p]) Set lowz = z[p]
+	If (highx < x[p]) Set highz = z[p]
+Loop
+
+//this is the "extentroid" for the coverage
+//UNLIKE A REAL CENTROID, OUR "EXTENTROID" MAY BE SIMPLY CALCULATED
+//AS A GEOMETRIC AVERAGE BETWEEN THE LOWEST AND HIGHEST VALUE FOR EACH
+//OF THE COORDINATE DIMENSIONS.  THUS, THE CALCULATION SIMPLY INVOLVES
+//ADDING THE LOW AND HIGH VALUE AND DIVIDING BY 2.
+Set avgx = (lowx + highx) / 2
+Set avgy = (lowy + highy) / 2
+Set avgz = (lowz + highz) / 2
